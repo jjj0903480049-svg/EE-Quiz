@@ -1,0 +1,9 @@
+node_modules/
+firebase-debug.log
+firestore-debug.log
+dist/
+release.json
+/sw.js
+.env*
+*serviceAccount*.json
+*service-account*.json

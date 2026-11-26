@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#102421">
+  <title>電機刷題室 V4.0</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icons/192.png">
+  <link rel="apple-touch-icon" href="./icons/192.png">
+  <link rel="stylesheet" href="./style.css">
+  <script src="./data/subjects.js" defer></script>
+  <script src="./updates.js" defer></script>
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+<header>
+  <a class="brand" href="./">電機刷題室 <small>V4.0</small></a>
+  <label class="theme">外觀 <select id="theme"><option value="system">跟隨系統</option><option value="light">淺色</option><option value="dark">深色</option></select></label>
+</header>
+<main>
+  <nav aria-label="功能">
+    <button data-view="practice" aria-current="page">刷題</button>
+    <button data-view="history">學習紀錄</button>
+    <button data-view="rank">排行榜</button>
+    <button data-view="account">帳號</button>
+    <button data-view="admin" hidden>管理後台</button>
+  </nav>
+  <p id="status" class="status" role="status"></p>
+  <section id="practice">
+    <h1>統測刷題</h1>
+    <div class="filters">
+      <label>科目 <select id="subject"></select></label>
+      <label>練習方式 <select id="mode"><option value="all">全部題目</option><option value="mock">模擬考</option><option value="past">歷屆試題</option><option value="daily">今日必刷</option><option value="fav">收藏本</option><option value="wrong">錯題本</option></select></label>
+      <label>考次／年份 <select id="period"></select></label>
+      <label>單元 <select id="unit"></select></label>
+    </div>
+    <article id="question" class="card" aria-live="polite"></article>
+  </section>
+  <section id="history" hidden><h1>學習紀錄</h1><p id="summary"></p><ol id="recent"></ol><button id="export">匯出 JSON</button> <button id="import">匯入 JSON</button><input id="backup-file" type="file" accept=".json,application/json" hidden></section>
+  <section id="rank" hidden>
+    <h1>排行榜</h1><p>自願參加。公開暱稱與答對的不重複題數。分數由參加者的裝置提供。</p>
+    <p id="ranking-state"></p>
+    <form id="ranking-form" hidden>
+      <label>公開暱稱 <input name="alias" maxlength="24" required></label>
+      <button>參加／更新分數</button><button type="button" id="leave">退出</button>
+    </form>
+    <ol id="ranking-list"></ol>
+  </section>
+  <section id="account" hidden>
+    <h1>帳號</h1><p id="identity"></p>
+    <form id="login-form" hidden>
+      <label>電子郵件 <input name="email" type="email" autocomplete="email" required></label>
+      <label>密碼 <input name="password" type="password" autocomplete="current-password" required></label>
+      <div class="actions">
+        <button value="login">登入</button><button value="register">註冊</button>
+        <button id="google" type="button">使用 Google 登入</button>
+        <button id="reset" type="button">忘記密碼</button>
+      </div>
+    </form>
+    <button id="logout" hidden>登出</button>
+    <button id="import-guest" hidden>匯入此裝置的訪客紀錄</button>
+  </section>
+  <section id="admin" hidden>
+    <h1>管理後台</h1>
+    <h2>題庫管理</h2>
+    <label>題庫 <select id="admin-subject"></select></label>
+    <label>載入題目 <select id="admin-picker"><option value="">新增題目</option></select></label>
+    <form id="editor">
+      <label>題目 ID <input name="id" pattern="[A-Za-z0-9_\-]{1,64}" maxlength="64" required></label>
+      <label>單元 <input name="unit" maxlength="120" required></label>
+      <label>類型 <select name="type"><option value="mock">模擬考</option><option value="past">歷屆</option></select></label>
+      <label>模擬考次／民國年份 <input name="period" type="number" min="1" max="999" required></label>
+      <label>來源 <input name="source" maxlength="240"></label>
+      <label>題幹 <textarea name="prompt" maxlength="4000" required></textarea></label>
+      <label>選項 A <input name="a" maxlength="1000" required></label>
+      <label>選項 B <input name="b" maxlength="1000" required></label>
+      <label>選項 C <input name="c" maxlength="1000" required></label>
+      <label>選項 D <input name="d" maxlength="1000" required></label>
+      <label>答案 <select name="answer"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select></label>
+      <label>解析 <textarea name="explanation" maxlength="4000"></textarea></label>
+      <div class="actions"><button>儲存題目</button><button type="button" id="hide-question">下架所選題目</button></div>
+    </form>
+    <h2>錯誤回報</h2><button id="refresh-reports">重新整理</button><ul id="reports"></ul>
+  </section>
+  <footer><small id="version"></small> <button id="checkUpdate">檢查更新</button>
+  <button id="applyUpdate" hidden>套用新版</button><p id="offline-status" role="status"></p><p id="updateStatus" role="status"></p></footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function owner(uid) { return signedIn() && request.auth.uid == uid; }
+    function admin() { return signedIn() && request.auth.token.get('admin', false) == true; }
+    function validId(id) { return id is string && id.matches('^[A-Za-z0-9_-]{1,64}$'); }
+    function text(value, max) { return value is string && value.size() <= max; }
+    function nonempty(value, max) { return text(value, max) && value.size() > 0; }
+    function keys(data, fields) { return data.keys().hasAll(fields) && data.keys().hasOnly(fields); }
+    function validEvent(data) {
+      return validId(data.subject) && validId(data.question) && data.time is int && data.time >= 0 &&
+        ((data.kind == 'favorite' && keys(data, ['subject','question','time','kind','value']) && data.value is bool) ||
+        (data.kind == 'answer' && keys(data, ['subject','question','time','kind','correct','seconds','day','daily']) &&
+          data.correct is bool && data.daily is bool && data.seconds is int && data.seconds >= 0 &&
+          data.seconds <= 86400 && data.day is string && data.day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')));
+    }
+    function validQuestion(data) {
+      return keys(data, ['question','options','answer','explanation','type','unit','year','mock','source']) &&
+        nonempty(data.question, 4000) && nonempty(data.unit, 120) &&
+        text(data.explanation, 4000) && text(data.source, 240) &&
+        data.answer is int && data.answer >= 0 && data.answer < 4 &&
+        data.options is list && data.options.size() == 4 &&
+        nonempty(data.options[0], 1000) && nonempty(data.options[1], 1000) &&
+        nonempty(data.options[2], 1000) && nonempty(data.options[3], 1000) &&
+        ((data.type == 'mock' && data.year == null && data.mock is int && data.mock >= 1 && data.mock <= 5) ||
+        (data.type == 'past' && data.mock == null && data.year is int && data.year >= 1 && data.year <= 999));
+    }
+    match /users/{uid} {
+      allow get: if owner(uid);
+      match /attempts/{event} {
+        allow read: if owner(uid);
+        allow create: if owner(uid) && validId(event) && validEvent(request.resource.data);
+        allow update: if owner(uid) && request.resource.data == resource.data;
+      }
+      match /imports/{digest} {
+        allow read: if owner(uid);
+        allow create: if owner(uid) && digest.matches('^[0-9a-f]{64}$') &&
+          keys(request.resource.data, ['state']) && nonempty(request.resource.data.state, 750000);
+        allow update: if owner(uid) && request.resource.data == resource.data;
+      }
+    }
+    match /subjects/{subject}/questions/{id} {
+      allow read: if true;
+      allow create, update: if admin() && validId(subject) && validId(id) &&
+        (validQuestion(request.resource.data) || request.resource.data == {'hidden': true});
+    }
+    match /reports/{id} {
+      allow read: if admin();
+      allow create: if signedIn() &&
+        keys(request.resource.data, ['uid','subject','question','message','createdAt','state']) &&
+        request.resource.data.uid == request.auth.uid && validId(request.resource.data.subject) &&
+        validId(request.resource.data.question) && nonempty(request.resource.data.message, 1000) &&
+        request.resource.data.createdAt == request.time && request.resource.data.state == 'open';
+      allow update: if admin() && resource.data.state == 'open' && request.resource.data.state == 'resolved' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['state']);
+    }
+    match /ranking/{uid} {
+      allow get: if owner(uid);
+      allow list: if signedIn() && request.query.limit <= 50;
+      allow delete: if owner(uid);
+      allow create, update: if owner(uid) && keys(request.resource.data, ['alias','score']) &&
+        nonempty(request.resource.data.alias, 24) && request.resource.data.score is int &&
+        request.resource.data.score >= 0 && request.resource.data.score <= 100000;
+    }
+  }
+}
