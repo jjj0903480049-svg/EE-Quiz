@@ -1,0 +1,7 @@
+const RELEASE=__RELEASE__;
+const CACHE='ee-quiz-release-'+RELEASE.version+'-'+RELEASE.digest;
+const scope=self.registration.scope;
+self.addEventListener('install',e=>e.waitUntil((async()=>{const c=await caches.open(CACHE);try{for(const [path,hash] of Object.entries(RELEASE.assets)){const url=new URL(path,scope);const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw Error(path);const bytes=await r.clone().arrayBuffer();const actual=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');if(actual!==hash)throw Error('Hash mismatch '+path);await c.put(url,r);}}catch(err){await caches.delete(CACHE);throw err;}})()));
+self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
+self.addEventListener('message',e=>{if(e.data?.type==='ACTIVATE')e.waitUntil(self.skipWaiting());if(e.data?.type==='VERSION')e.source?.postMessage({type:'VERSION',version:RELEASE.version,date:RELEASE.date});});
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(!u.href.startsWith(scope))return;const path=u.href.slice(scope.length).split('?')[0];if(e.request.mode==='navigate'||Object.hasOwn(RELEASE.assets,path)){e.respondWith((async()=>{const c=await caches.open(CACHE);return await c.match(new URL(e.request.mode==='navigate'?'index.html':path,scope))||Response.error();})());}});

@@ -1,0 +1,7 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    { "collectionGroup": "imports", "fieldPath": "state", "indexes": [] },
+    { "collectionGroup": "reports", "fieldPath": "message", "indexes": [] }
+  ]
+}
